@@ -231,6 +231,8 @@
 #include <optional>
 #include <vector>
 
+#include "pointerAuthEmu/pointerAuthEmuFrameLowering.h"
+
 using namespace llvm;
 
 #define DEBUG_TYPE "frame-info"
@@ -1457,6 +1459,8 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
   if (MFnI.shouldSignReturnAddress(MF))
     signLR(MF, MBB, MBBI, NeedsWinCFI, &HasWinCFI);
 
+  pointerAuthEmuFrameLowering::instrumentPrologue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DebugLoc(), MMI);
+
   if (EmitCFI && MFnI.isMTETagged()) {
     BuildMI(MBB, MBBI, DL, TII->get(AArch64::EMITMTETAGGED))
         .setMIFlag(MachineInstr::FrameSetup);
@@ -1980,6 +1984,7 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
   AArch64FunctionInfo *AFI = MF.getInfo<AArch64FunctionInfo>();
   const AArch64Subtarget &Subtarget = MF.getSubtarget<AArch64Subtarget>();
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
+  MachineModuleInfo &MMI = MF.getMMI();
   DebugLoc DL;
   bool NeedsWinCFI = needsWinCFI(MF);
   bool EmitCFI = AFI->needsAsyncDwarfUnwindInfo(MF);
@@ -2149,6 +2154,8 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
                     StackOffset::getFixed(NumBytes + (int64_t)AfterCSRPopSize),
                     TII, MachineInstr::FrameDestroy, false, NeedsWinCFI,
                     &HasWinCFI, EmitCFI, StackOffset::getFixed(NumBytes));
+
+    pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DL, MMI);
     return;
   }
 

@@ -15,6 +15,7 @@
 
 #include "llvm/Support/TypeSize.h"
 #include "llvm/CodeGen/TargetFrameLowering.h"
+#include "pointerAuthEmu/pointerAuthEmuFrameLowering.h"
 
 namespace llvm {
 
@@ -28,7 +29,7 @@ public:
 
   MachineBasicBlock::iterator
   eliminateCallFramePseudoInstr(MachineFunction &MF, MachineBasicBlock &MBB,
-                                MachineBasicBlock::iterator I) const override;
+                                MachineBasicBlock::iterator I) const override;  
 
   static void signLR(MachineFunction &MF, MachineBasicBlock &MBB,
                      MachineBasicBlock::iterator MBBI, bool NeedsWinCFI,
