@@ -2155,7 +2155,12 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
                     TII, MachineInstr::FrameDestroy, false, NeedsWinCFI,
                     &HasWinCFI, EmitCFI, StackOffset::getFixed(NumBytes));
 
-    pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DL, MMI);
+    // Insert pauth instruction to authenticate LR
+    if (MF.getInfo<AArch64FunctionInfo>()->hasStackFrame() ||
+                               windowsRequiresStackProbe(MF, NumBytes)) {      
+      pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DL, MMI);      
+    }    
+
     return;
   }
 
@@ -2292,6 +2297,13 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
         false, NeedsWinCFI, &HasWinCFI, EmitCFI,
         StackOffset::getFixed(CombineAfterCSRBump ? PrologueSaveSize : 0));
   }
+
+  if (MBBI == MBB.end() || MBBI->getParent() == &MBB) {
+        pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DL, MMI);      
+    } else {
+        auto tmpMBBI = MBB.getFirstTerminator();      
+        pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, tmpMBBI, DL, MMI);      
+    }
 }
 
 bool AArch64FrameLowering::enableCFIFixup(MachineFunction &MF) const {
