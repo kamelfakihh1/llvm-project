@@ -18,6 +18,12 @@ void pointerAuthEmuFrameLowering::instrumentEpilogue(const TargetInstrInfo *TII,
     // // bl _ZN7QARMA6414verify_pointerEyy
     // // mov x30, x0
 
+    MachineFunction *MF = MBB.getParent();
+    if(MF->getName().str() == "main" || MF->getName().str() == "_GLOBAL__sub_I_pa_test.cpp" || MF->getName().str() == "__cxx_global_var_init"){
+        return;
+    }
+
+
     // get Machine instruction object
     auto MIi = (MBBI != MBB.end() ? &*MBBI : nullptr);
 
@@ -30,8 +36,16 @@ void pointerAuthEmuFrameLowering::instrumentEpilogue(const TargetInstrInfo *TII,
         BuildMI(&MBB, DL, TII->get(AArch64::ADDXri), AArch64::X1)
             .addReg(AArch64::SP)
             .addImm(0)
-            .addImm(0);            
-        BuildMI(&MBB, DL, TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6414verify_pointerEyy");        
+            .addImm(0);   
+        BuildMI(&MBB, DL, TII->get(AArch64::ADDXri), AArch64::X2)
+            .addReg(AArch64::X27)
+            .addImm(0)
+            .addImm(0);   
+        BuildMI(&MBB, DL, TII->get(AArch64::ADDXri), AArch64::X3)
+            .addReg(AArch64::X28)
+            .addImm(0)
+            .addImm(0);                        
+        BuildMI(&MBB, DL, TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6414verify_pointerEyyyy");        
         BuildMI(&MBB, DL, TII->get(AArch64::ADDXri), AArch64::LR)
             .addReg(AArch64::X0)
             .addImm(0)
@@ -44,8 +58,16 @@ void pointerAuthEmuFrameLowering::instrumentEpilogue(const TargetInstrInfo *TII,
         BuildMI(MBB, MIi, DL, TII->get(AArch64::ADDXri), AArch64::X1)
             .addReg(AArch64::SP)
             .addImm(0)
+            .addImm(0);      
+        BuildMI(MBB, MIi, DL, TII->get(AArch64::ADDXri), AArch64::X2)
+            .addReg(AArch64::X27)
+            .addImm(0)
+            .addImm(0);   
+        BuildMI(MBB, MIi, DL, TII->get(AArch64::ADDXri), AArch64::X3)
+            .addReg(AArch64::X28)
+            .addImm(0)
             .addImm(0);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6414verify_pointerEyy");        
+        BuildMI(MBB, MIi, DL, TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6414verify_pointerEyyyy");        
         BuildMI(MBB, MIi, DL, TII->get(AArch64::ADDXri), AArch64::LR)
             .addReg(AArch64::X0)
             .addImm(0)
@@ -63,6 +85,11 @@ void pointerAuthEmuFrameLowering::instrumentPrologue(const TargetInstrInfo *TII,
     // // bl _ZN7QARMA6412sign_pointerEyy
     // // mov x30, x0
     
+    MachineFunction *MF = MBB.getParent();
+    if(MF->getName().str() == "main" || MF->getName().str() == "_GLOBAL__sub_I_pa_test.cpp" || MF->getName().str() == "__cxx_global_var_init"){
+        return;
+    }
+
     // get Machine instruction object
     auto MIi = (MBBI != MBB.end() ? &*MBBI : nullptr);
 
@@ -75,8 +102,16 @@ void pointerAuthEmuFrameLowering::instrumentPrologue(const TargetInstrInfo *TII,
         BuildMI(&MBB, DL, TII->get(AArch64::ADDXri), AArch64::X1)
             .addReg(AArch64::SP)
             .addImm(0)
-            .addImm(0);            
-        BuildMI(&MBB, DL, TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6412sign_pointerEyy");        
+            .addImm(0); 
+        BuildMI(&MBB, DL, TII->get(AArch64::ADDXri), AArch64::X2)
+            .addReg(AArch64::X27)
+            .addImm(0)
+            .addImm(0);   
+        BuildMI(&MBB, DL, TII->get(AArch64::ADDXri), AArch64::X3)
+            .addReg(AArch64::X28)
+            .addImm(0)
+            .addImm(0);                  
+        BuildMI(&MBB, DL, TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6412sign_pointerEyyyy");        
         BuildMI(&MBB, DL, TII->get(AArch64::ADDXri), AArch64::LR)
             .addReg(AArch64::X0)
             .addImm(0)
@@ -90,7 +125,15 @@ void pointerAuthEmuFrameLowering::instrumentPrologue(const TargetInstrInfo *TII,
             .addReg(AArch64::SP)
             .addImm(0)
             .addImm(0);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6412sign_pointerEyy");        
+        BuildMI(MBB, MIi, DL, TII->get(AArch64::ADDXri), AArch64::X2)
+            .addReg(AArch64::X27)
+            .addImm(0)
+            .addImm(0);   
+        BuildMI(MBB, MIi, DL, TII->get(AArch64::ADDXri), AArch64::X3)
+            .addReg(AArch64::X28)
+            .addImm(0)
+            .addImm(0);      
+        BuildMI(MBB, MIi, DL, TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6412sign_pointerEyyyy");        
         BuildMI(MBB, MIi, DL, TII->get(AArch64::ADDXri), AArch64::LR)
             .addReg(AArch64::X0)
             .addImm(0)

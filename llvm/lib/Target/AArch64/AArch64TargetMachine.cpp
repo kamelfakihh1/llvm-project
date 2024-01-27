@@ -50,6 +50,7 @@
 #include "llvm/TargetParser/Triple.h"
 #include "llvm/Transforms/CFGuard.h"
 #include "llvm/Transforms/Scalar.h"
+#include "pointerAuthKeyInit/pointerAuthKeyInit.h"
 #include <memory>
 #include <optional>
 #include <string>
@@ -240,6 +241,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeAArch64Target() {
   initializeAArch64LowerHomogeneousPrologEpilogPass(*PR);
   initializeAArch64DAGToDAGISelPass(*PR);
   initializeAArch64GlobalsTaggingPass(*PR);
+  initializePointerAuthKeyInitPass(*PR);
 }
 
 //===----------------------------------------------------------------------===//
@@ -762,6 +764,8 @@ void AArch64PassConfig::addPostRegAlloc() {
   if (TM->getOptLevel() != CodeGenOpt::None && usingDefaultRegAlloc())
     // Improve performance for some FP/SIMD code for A57.
     addPass(createAArch64A57FPLoadBalancing());
+
+  addPass(createPointerAuthKeyInit());
 }
 
 void AArch64PassConfig::addPreSched2() {

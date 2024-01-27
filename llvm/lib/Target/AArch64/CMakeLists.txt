@@ -87,6 +87,7 @@ add_llvm_target(AArch64CodeGen
   SVEIntrinsicOpts.cpp
   AArch64SIMDInstrOpt.cpp
   pointerAuthEmu/pointerAuthEmuFrameLowering.cpp
+  pointerAuthKeyInit/pointerAuthKeyInit.cpp
 
   DEPENDS
   intrinsics_gen
