@@ -455,6 +455,9 @@ AArch64RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
       markSuperRegs(Reserved, AArch64::GPR32commonRegClass.getRegister(i));
   }
 
+  // reserve register for PA key (not accessible by application)
+  Reserved.reserve(AArch64::X28);
+
   assert(checkAllSuperRegsMarked(Reserved));
   return Reserved;
 }

@@ -23,20 +23,6 @@ void pointerAuthEmuFrameLowering::instrumentEpilogue(const TargetInstrInfo *TII,
 
     // insert function call to verify pointer
     if (MIi == nullptr) {                
-        // BuildMI(&MBB, DL, TII->get(AArch64::EORXrr))
-        //     .addReg(AArch64::X0)
-        //     .addReg(AArch64::LR)            
-        //     .addImm(0);
-        // BuildMI(&MBB, DL, TII->get(AArch64::EORXrr))
-        //     .addReg(AArch64::X1)
-        //     .addReg(AArch64::SP)            
-        //     .addImm(0);
-        // BuildMI(&MBB, DL, TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6414verify_pointerEyy");
-        // BuildMI(&MBB, DL, TII->get(AArch64::EORXrr))
-        //     .addReg(AArch64::LR)
-        //     .addReg(AArch64::X0)            
-        //     .addImm(0);             
-        
         BuildMI(&MBB, DL, TII->get(AArch64::ADDXri), AArch64::X0)
             .addReg(AArch64::LR)
             .addImm(0)
@@ -50,20 +36,7 @@ void pointerAuthEmuFrameLowering::instrumentEpilogue(const TargetInstrInfo *TII,
             .addReg(AArch64::X0)
             .addImm(0)
             .addImm(0);              
-    } else {
-        // BuildMI(MBB, MIi, DL, TII->get(AArch64::EORXrr))
-        //     .addReg(AArch64::X0)
-        //     .addReg(AArch64::LR)            
-        //     .addImm(0);
-        // BuildMI(MBB, MIi, DL, TII->get(AArch64::EORXrr))
-        //     .addReg(AArch64::X1)
-        //     .addReg(AArch64::SP)            
-        //     .addImm(0);
-        // BuildMI(MBB, MIi, DL, TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6414verify_pointerEyy");
-        // BuildMI(MBB, MIi, DL, TII->get(AArch64::EORXrr))
-        //     .addReg(AArch64::LR)
-        //     .addReg(AArch64::X0)            
-        //     .addImm(0);        
+    } else {     
         BuildMI(MBB, MIi, DL, TII->get(AArch64::ADDXri), AArch64::X0)
             .addReg(AArch64::LR)
             .addImm(0)
