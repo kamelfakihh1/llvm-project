@@ -45,7 +45,7 @@ void pointerAuthEmuFrameLowering::instrumentEpilogue(const TargetInstrInfo *TII,
             .addReg(AArch64::X28)
             .addImm(0)
             .addImm(0);                        
-        BuildMI(&MBB, DL, TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6414verify_pointerEyyyy");        
+        BuildMI(&MBB, DL, TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6414verify_pointerEyyyy");
         BuildMI(&MBB, DL, TII->get(AArch64::ADDXri), AArch64::LR)
             .addReg(AArch64::X0)
             .addImm(0)
