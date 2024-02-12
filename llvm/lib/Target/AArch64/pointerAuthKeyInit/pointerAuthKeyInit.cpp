@@ -6,6 +6,8 @@
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineModuleInfo.h"
 #include "llvm/IR/ValueSymbolTable.h"
+#include "llvm/Support/CommandLine.h"
+#include "llvm/PaEmu/PaEmu.h"
 #include "AArch64RegisterInfo.h"
 #include "AArch64InstrInfo.h"
 // #include "../ARM/ARMRegisterInfo.h"
@@ -17,12 +19,24 @@ using namespace llvm;
 
 char PointerAuthKeyInit::ID = 0;
 
+static cl::opt<bool> EnablePAEmu("pa-emu", cl::Hidden,
+                                      cl::desc("Pointer authentication emulation pass"),
+                                      cl::init(false));
+
+bool llvm::PaEmu::usePaEmu() {
+  return EnablePAEmu;
+}
+
 INITIALIZE_PASS_BEGIN(PointerAuthKeyInit, "pointerAuth key", "pointerAuth key pass", false, false)
 INITIALIZE_PASS_END(PointerAuthKeyInit, "pointerAuth key", "pointerAuth key pass", false, false)
 
 FunctionPass *llvm::createPointerAuthKeyInit() { return new PointerAuthKeyInit(); }
 
 bool PointerAuthKeyInit::runOnMachineFunction(MachineFunction &MF) {        
+
+    if(!PaEmu::usePaEmu()){
+        return false;
+    }
 
     std::cout << MF.getName().str() << std::endl;
 
@@ -33,73 +47,7 @@ bool PointerAuthKeyInit::runOnMachineFunction(MachineFunction &MF) {
         for(auto &MBB : MF){
             if(MBB.isEntryBlock()){
                 MachineBasicBlock::iterator MBBI = MBB.begin();
-                // MachineBasicBlock::iterator MBBI = MBB.getLastNonDebugInstr();        
-
-                // // generate a random key                                    
-
-                // stp x29, x30, [sp, -32]! 
-                // BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STPXpre))
-                //     .addReg(AArch64::SP)
-                //     .addReg(AArch64::FP)
-                //     .addReg(AArch64::LR)
-                //     .addReg(AArch64::SP)
-                //     .addImm(-32)
-                //     .setMIFlag(MachineInstr::FrameSetup);
-
-                // // add x29, sp, 0
-                // BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::ADDXri), AArch64::FP)
-                //     .addReg(AArch64::SP)
-                //     .addImm(0)
-                //     .addImm(0); 
-
-                // // add x0, sp, 0
-                // BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::ADDXri), AArch64::X0)
-                //     .addReg(AArch64::SP)
-                //     .addImm(0)
-                //     .addImm(0); 
-
-                // BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::EORXrr), AArch64::X9)
-                //     .addReg(AArch64::X9)
-                //     .addReg(AArch64::X9)
-                //     .addImm(0)
-                //     .addImm(0); 
-
-                // // add x1, x9, #8 
-                // BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::ADDXri), AArch64::X1)
-                //     .addReg(AArch64::X9)
-                //     .addImm(8)
-                //     .addImm(0); 
-
-                // // add x2, x9, #0
-                // BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::ADDXri), AArch64::X2)
-                //     .addReg(AArch64::X9)
-                //     .addImm(0)
-                //     .addImm(0); 
-
-                // BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::ADDXri), AArch64::X8)
-                //     .addReg(AArch64::X9)
-                //     .addImm(278)
-                //     .addImm(0); 
-
-                // // svc 0
-                // BuildMI(MBB, MBBI, DebugLoc(), TII->get(ARM::SWI))                                        
-                //     .addImm(0); 
-
-                // // ldr x0, [sp]                  
-                // BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost))
-                //     .addReg(AArch64::SP)
-                //     .addReg(AArch64::X27)                    
-                //     .addReg(AArch64::SP)
-                //     .addImm(0);
-
-
-                // // ldp x29, x30, [sp], 32                  
-                // BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDPXpost))
-                //     .addReg(AArch64::SP)
-                //     .addReg(AArch64::FP)
-                //     .addReg(AArch64::LR)
-                //     .addReg(AArch64::SP)
-                //     .addImm(32);             
+                // MachineBasicBlock::iterator MBBI = MBB.getLastNonDebugInstr();                        
 
                 // _ZN7QARMA6412generate_keyEv
                 BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6412generate_keyEv");                                                                                         

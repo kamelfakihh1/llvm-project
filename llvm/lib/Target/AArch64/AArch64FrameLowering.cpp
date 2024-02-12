@@ -225,6 +225,8 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
+#include "pointerAuthKeyInit/pointerAuthKeyInit.h"
+#include "llvm/PaEmu/PaEmu.h"
 #include <cassert>
 #include <cstdint>
 #include <iterator>
@@ -1459,7 +1461,9 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
   if (MFnI.shouldSignReturnAddress(MF))
     signLR(MF, MBB, MBBI, NeedsWinCFI, &HasWinCFI);
 
-  pointerAuthEmuFrameLowering::instrumentPrologue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DebugLoc(), MMI);
+  if(PaEmu::usePaEmu()){
+    pointerAuthEmuFrameLowering::instrumentPrologue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DebugLoc(), MMI);
+  }
 
   if (EmitCFI && MFnI.isMTETagged()) {
     BuildMI(MBB, MBBI, DL, TII->get(AArch64::EMITMTETAGGED))
@@ -2156,10 +2160,12 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
                     &HasWinCFI, EmitCFI, StackOffset::getFixed(NumBytes));
 
     // Insert pauth instruction to authenticate LR
-    if (MF.getInfo<AArch64FunctionInfo>()->hasStackFrame() ||
-                               windowsRequiresStackProbe(MF, NumBytes)) {      
-      pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DL, MMI);      
-    }    
+    if(PaEmu::usePaEmu()){
+      if (MF.getInfo<AArch64FunctionInfo>()->hasStackFrame() ||
+                                windowsRequiresStackProbe(MF, NumBytes)) {      
+        pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DL, MMI);      
+      }    
+    }
 
     return;
   }
@@ -2298,12 +2304,14 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
         StackOffset::getFixed(CombineAfterCSRBump ? PrologueSaveSize : 0));
   }
 
-  if (MBBI == MBB.end() || MBBI->getParent() == &MBB) {
+  if(PaEmu::usePaEmu()){
+    if (MBBI == MBB.end() || MBBI->getParent() == &MBB) {
         pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DL, MMI);      
     } else {
         auto tmpMBBI = MBB.getFirstTerminator();      
         pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, tmpMBBI, DL, MMI);      
     }
+  }
 }
 
 bool AArch64FrameLowering::enableCFIFixup(MachineFunction &MF) const {
