@@ -13,7 +13,6 @@
 // #include "../ARM/ARMRegisterInfo.h"
 // #include "../ARM/ARMInstrInfo.h"
 #include "pointerAuthKeyInit.h"
-#include <iostream>
 
 using namespace llvm;
 
@@ -36,14 +35,11 @@ bool PointerAuthKeyInit::runOnMachineFunction(MachineFunction &MF) {
 
     if(!PaEmu::usePaEmu()){
         return false;
-    }
-
-    std::cout << MF.getName().str() << std::endl;
+    }    
 
     const TargetInstrInfo *TII = MF.getSubtarget().getInstrInfo();
 
-    if(MF.getName().str() == "main"){
-        std::cout << "initializing PA key"<< std::endl;
+    if(MF.getName().str() == "main"){        
         for(auto &MBB : MF){
             if(MBB.isEntryBlock()){
                 MachineBasicBlock::iterator MBBI = MBB.begin();
