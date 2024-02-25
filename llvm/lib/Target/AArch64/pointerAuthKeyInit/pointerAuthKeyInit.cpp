@@ -13,6 +13,7 @@
 // #include "../ARM/ARMRegisterInfo.h"
 // #include "../ARM/ARMInstrInfo.h"
 #include "pointerAuthKeyInit.h"
+#include <iostream>
 
 using namespace llvm;
 
@@ -39,11 +40,90 @@ bool PointerAuthKeyInit::runOnMachineFunction(MachineFunction &MF) {
 
     const TargetInstrInfo *TII = MF.getSubtarget().getInstrInfo();
 
+    // std::cout << "Key gen : " << MF.getName().str() << std::endl;
+
     if(MF.getName().str() == "main"){        
         for(auto &MBB : MF){
             if(MBB.isEntryBlock()){
                 MachineBasicBlock::iterator MBBI = MBB.begin();
-                // MachineBasicBlock::iterator MBBI = MBB.getLastNonDebugInstr();                        
+                // MachineBasicBlock::iterator MBBI = MBB.getLastNonDebugInstr();        
+
+                BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X0)
+            .addReg(AArch64::SP)
+            .addImm(-16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X1)
+            .addReg(AArch64::SP)
+            .addImm(-16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X2)
+            .addReg(AArch64::SP)
+            .addImm(-16);                          
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X3)
+            .addReg(AArch64::SP)
+            .addImm(-16);                
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X4)
+            .addReg(AArch64::SP)
+            .addImm(-16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X5)
+            .addReg(AArch64::SP)
+            .addImm(-16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X6)
+            .addReg(AArch64::SP)
+            .addImm(-16);                          
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X7)
+            .addReg(AArch64::SP)
+            .addImm(-16);      
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X8)
+            .addReg(AArch64::SP)
+            .addImm(-16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X9)
+            .addReg(AArch64::SP)
+            .addImm(-16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X10)
+            .addReg(AArch64::SP)
+            .addImm(-16);                          
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X11)
+            .addReg(AArch64::SP)
+            .addImm(-16);                
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X12)
+            .addReg(AArch64::SP)
+            .addImm(-16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X13)
+            .addReg(AArch64::SP)
+            .addImm(-16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X14)
+            .addReg(AArch64::SP)
+            .addImm(-16);                          
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X15)
+            .addReg(AArch64::SP)
+            .addImm(-16);       
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X16)
+            .addReg(AArch64::SP)
+            .addImm(-16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X17)
+            .addReg(AArch64::SP)
+            .addImm(-16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::STRXpre), AArch64::SP)
+            .addReg(AArch64::X18)
+            .addReg(AArch64::SP)
+            .addImm(-16);                         
 
                 // _ZN7QARMA6412generate_keyEv
                 BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6412generate_keyEv");                                                                                         
@@ -56,7 +136,86 @@ bool PointerAuthKeyInit::runOnMachineFunction(MachineFunction &MF) {
                 BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::ADDXri), AArch64::X28)
                     .addReg(AArch64::X1)
                     .addImm(0)
-                    .addImm(0);                 
+                    .addImm(0);    
+
+            BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X18)
+            .addReg(AArch64::SP)
+            .addImm(16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X17)
+            .addReg(AArch64::SP)
+            .addImm(16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X16)
+            .addReg(AArch64::SP)
+            .addImm(16);                          
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X15)
+            .addReg(AArch64::SP)
+            .addImm(16);                
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X14)
+            .addReg(AArch64::SP)
+            .addImm(16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X13)
+            .addReg(AArch64::SP)
+            .addImm(16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X12)
+            .addReg(AArch64::SP)
+            .addImm(16);                          
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X11)
+            .addReg(AArch64::SP)
+            .addImm(16);      
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X10)
+            .addReg(AArch64::SP)
+            .addImm(16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X9)
+            .addReg(AArch64::SP)
+            .addImm(16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X8)
+            .addReg(AArch64::SP)
+            .addImm(16);                          
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X7)
+            .addReg(AArch64::SP)
+            .addImm(16);                
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X6)
+            .addReg(AArch64::SP)
+            .addImm(16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X5)
+            .addReg(AArch64::SP)
+            .addImm(16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X4)
+            .addReg(AArch64::SP)
+            .addImm(16);                          
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X3)
+            .addReg(AArch64::SP)
+            .addImm(16);       
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X2)
+            .addReg(AArch64::SP)
+            .addImm(16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X1)
+            .addReg(AArch64::SP)
+            .addImm(16);            
+        BuildMI(MBB, MBBI, DebugLoc(), TII->get(AArch64::LDRXpost), AArch64::SP)
+            .addReg(AArch64::X0)
+            .addReg(AArch64::SP)
+            .addImm(16);    
+
+             
             }
         }
     }

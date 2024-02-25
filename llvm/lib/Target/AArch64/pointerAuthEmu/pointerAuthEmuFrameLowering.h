@@ -14,11 +14,11 @@ namespace llvm {
 
     void instrumentEpilogue(const TargetInstrInfo *TII, const TargetRegisterInfo *TRI,
                         MachineBasicBlock &MBB, MachineBasicBlock::iterator &MBBI,
-                        const DebugLoc &DL, MachineModuleInfo &MMI);
+                        const DebugLoc &DL);
 
     void instrumentPrologue(const TargetInstrInfo *TII, const TargetRegisterInfo *TRI,
                             MachineBasicBlock &MBB, MachineBasicBlock::iterator &MBBI,
-                            const DebugLoc &DL, MachineModuleInfo &MMI);
+                            const DebugLoc &DL);
     
     void addFunctionCall(const TargetInstrInfo *TII, MachineBasicBlock &MBB, MachineInstr &MI,
                                     const DebugLoc &DL, Function *func);

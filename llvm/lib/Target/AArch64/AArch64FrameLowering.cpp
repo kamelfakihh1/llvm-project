@@ -1461,10 +1461,6 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
   if (MFnI.shouldSignReturnAddress(MF))
     signLR(MF, MBB, MBBI, NeedsWinCFI, &HasWinCFI);
 
-  if(PaEmu::usePaEmu()){
-    pointerAuthEmuFrameLowering::instrumentPrologue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DebugLoc(), MMI);
-  }
-
   if (EmitCFI && MFnI.isMTETagged()) {
     BuildMI(MBB, MBBI, DL, TII->get(AArch64::EMITMTETAGGED))
         .setMIFlag(MachineInstr::FrameSetup);
@@ -1507,7 +1503,7 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
   // All calls are tail calls in GHC calling conv, and functions have no
   // prologue/epilogue.
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
-    return;
+    return;  
 
   // Set tagged base pointer to the requested stack slot.
   // Ideally it should match SP value after prologue.
@@ -1563,6 +1559,10 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
     }
 
     return;
+  }
+
+  if(PaEmu::usePaEmu()){
+    pointerAuthEmuFrameLowering::instrumentPrologue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DebugLoc());
   }
 
   bool IsWin64 =
@@ -2162,8 +2162,8 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
     // Insert pauth instruction to authenticate LR
     if(PaEmu::usePaEmu()){
       if (MF.getInfo<AArch64FunctionInfo>()->hasStackFrame() ||
-                                windowsRequiresStackProbe(MF, NumBytes)) {      
-        pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DL, MMI);      
+                                windowsRequiresStackProbe(MF, NumBytes)) {                                    
+        pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DL);      
       }    
     }
 
@@ -2290,6 +2290,15 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
         .setMIFlags(MachineInstr::FrameDestroy);
   }
 
+  if(PaEmu::usePaEmu()){
+    if (MBBI == MBB.end() || MBBI->getParent() == &MBB) {
+        pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DL);      
+    } else {
+        auto tmpMBBI = MBB.getFirstTerminator();      
+        pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, tmpMBBI, DL);      
+    }
+  }
+
   // This must be placed after the callee-save restore code because that code
   // assumes the SP is at the same location as it was after the callee-save save
   // code in the prologue.
@@ -2302,16 +2311,7 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
         StackOffset::getFixed(AfterCSRPopSize), TII, MachineInstr::FrameDestroy,
         false, NeedsWinCFI, &HasWinCFI, EmitCFI,
         StackOffset::getFixed(CombineAfterCSRBump ? PrologueSaveSize : 0));
-  }
-
-  if(PaEmu::usePaEmu()){
-    if (MBBI == MBB.end() || MBBI->getParent() == &MBB) {
-        pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DL, MMI);      
-    } else {
-        auto tmpMBBI = MBB.getFirstTerminator();      
-        pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, tmpMBBI, DL, MMI);      
-    }
-  }
+  }  
 }
 
 bool AArch64FrameLowering::enableCFIFixup(MachineFunction &MF) const {
