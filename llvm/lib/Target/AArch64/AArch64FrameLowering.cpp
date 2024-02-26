@@ -1562,7 +1562,7 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
   }
 
   if(PaEmu::usePaEmu()){
-    pointerAuthEmuFrameLowering::instrumentPrologue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DebugLoc());
+    pointerAuthEmuFrameLowering::instrumentPrologue(TII, MBB, MBBI, DebugLoc());
   }
 
   bool IsWin64 =
@@ -1988,7 +1988,7 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
   AArch64FunctionInfo *AFI = MF.getInfo<AArch64FunctionInfo>();
   const AArch64Subtarget &Subtarget = MF.getSubtarget<AArch64Subtarget>();
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
-  MachineModuleInfo &MMI = MF.getMMI();
+  // MachineModuleInfo &MMI = MF.getMMI();
   DebugLoc DL;
   bool NeedsWinCFI = needsWinCFI(MF);
   bool EmitCFI = AFI->needsAsyncDwarfUnwindInfo(MF);
@@ -2163,7 +2163,7 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
     if(PaEmu::usePaEmu()){
       if (MF.getInfo<AArch64FunctionInfo>()->hasStackFrame() ||
                                 windowsRequiresStackProbe(MF, NumBytes)) {                                    
-        pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DL);      
+        pointerAuthEmuFrameLowering::instrumentEpilogue(TII, MBB, MBBI, DL);      
       }    
     }
 
@@ -2292,10 +2292,10 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
 
   if(PaEmu::usePaEmu()){
     if (MBBI == MBB.end() || MBBI->getParent() == &MBB) {
-        pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DL);      
+        pointerAuthEmuFrameLowering::instrumentEpilogue(TII, MBB, MBBI, DL);      
     } else {
         auto tmpMBBI = MBB.getFirstTerminator();      
-        pointerAuthEmuFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB, tmpMBBI, DL);      
+        pointerAuthEmuFrameLowering::instrumentEpilogue(TII, MBB, tmpMBBI, DL);      
     }
   }
 

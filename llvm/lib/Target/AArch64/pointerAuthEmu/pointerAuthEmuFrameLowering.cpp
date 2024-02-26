@@ -1,4 +1,3 @@
-#include <iostream>
 #include "pointerAuthEmuFrameLowering.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineModuleInfo.h"
@@ -8,28 +7,27 @@
 
 using namespace llvm;
 
-void pointerAuthEmuFrameLowering::instrumentEpilogue(const TargetInstrInfo *TII, const TargetRegisterInfo *TRI,
+void pointerAuthEmuFrameLowering::instrumentEpilogue(const TargetInstrInfo *TII,
                                   MachineBasicBlock &MBB, MachineBasicBlock::iterator &MBBI,
                                   const DebugLoc &DL) 
-{   
-
-    // // mov x0, x30    
-    // // mov x1, sp
-    // // bl _ZN7QARMA6414verify_pointerEyy
-    // // mov x30, x0    
-
+{       
+    // these functions are skipped cause they're called before key generation
     MachineFunction *MF = MBB.getParent();    
-    if(MF->getName().str() == "main" || MF->getName().str() == "_GLOBAL__sub_I_pa_test.cpp" || MF->getName().str() == "_GLOBAL__sub_I_main.cpp" || MF->getName().str() == "__cxx_global_var_init"){
+    if(MF->getName().str() == "main" || MF->getName().str() == "_GLOBAL__sub_I_main.cpp" || MF->getName().str() == "__cxx_global_var_init"){
         return;
     }
 
-
     // get Machine instruction object
-    auto MIi = (MBBI != MBB.end() ? &*MBBI : nullptr);
-    std::cout << "Intrumenting epilogue : " << MF->getName().str() << std::endl;
+    auto MIi = (MBBI != MBB.end() ? &*MBBI : nullptr);    
 
     // insert function call to verify pointer
     if (MIi == nullptr) {  
+
+        // save general purpose registers (X0-X7) to the stack 
+        // verify_pointer is not expected to reserve the values of these registers 
+        // if an of the register values are modified inside verify_pointer 
+        // the called function (of which we are instrumenting the prologue)
+        // will receive invalid arguments. The same applies for Epilogues
         BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
             .addReg(AArch64::X0)
             .addReg(AArch64::SP)
@@ -61,51 +59,13 @@ void pointerAuthEmuFrameLowering::instrumentEpilogue(const TargetInstrInfo *TII,
         BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
             .addReg(AArch64::X7)
             .addReg(AArch64::SP)
-            .addImm(-16);      
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X8)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X9)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X10)
-            .addReg(AArch64::SP)
-            .addImm(-16);                          
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X11)
-            .addReg(AArch64::SP)
-            .addImm(-16);                
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X12)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X13)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X14)
-            .addReg(AArch64::SP)
-            .addImm(-16);                          
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X15)
-            .addReg(AArch64::SP)
-            .addImm(-16);       
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X16)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X17)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X18)
-            .addReg(AArch64::SP)
-            .addImm(-16);                                 
+            .addImm(-16);             
+
+        // call verify_pointer()
+        // mov x0, x30
+        // mov x1, sp
+        // bl _ZN7QARMA6414verify_pointerEyyyy
+        // mov x30, x0                                  
         BuildMI(&MBB, DL, TII->get(AArch64::ADDXri), AArch64::X0)
             .addReg(AArch64::LR)
             .addImm(0)
@@ -123,54 +83,14 @@ void pointerAuthEmuFrameLowering::instrumentEpilogue(const TargetInstrInfo *TII,
             .addImm(0)
             .addImm(0);                        
         BuildMI(&MBB, DL, TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6414verify_pointerEyyyy");
+
+        // save restored pointer in LR
         BuildMI(&MBB, DL, TII->get(AArch64::ADDXri), AArch64::LR)
             .addReg(AArch64::X0)
             .addImm(0)
-            .addImm(0);  
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X18)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X17)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X16)
-            .addReg(AArch64::SP)
-            .addImm(16);                          
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X15)
-            .addReg(AArch64::SP)
-            .addImm(16);                
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X14)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X13)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X12)
-            .addReg(AArch64::SP)
-            .addImm(16);                          
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X11)
-            .addReg(AArch64::SP)
-            .addImm(16);      
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X10)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X9)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X8)
-            .addReg(AArch64::SP)
-            .addImm(16);                          
+            .addImm(0);             
+
+        // restore general purpose registers (X0-X7)                 
         BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
             .addReg(AArch64::X7)
             .addReg(AArch64::SP)
@@ -204,6 +124,8 @@ void pointerAuthEmuFrameLowering::instrumentEpilogue(const TargetInstrInfo *TII,
             .addReg(AArch64::SP)
             .addImm(16);                     
     } else {    
+
+        // save general purpose registers (X0-X7) to the stack 
         BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
             .addReg(AArch64::X0)
             .addReg(AArch64::SP)
@@ -235,51 +157,13 @@ void pointerAuthEmuFrameLowering::instrumentEpilogue(const TargetInstrInfo *TII,
         BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
             .addReg(AArch64::X7)
             .addReg(AArch64::SP)
-            .addImm(-16);      
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X8)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X9)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X10)
-            .addReg(AArch64::SP)
-            .addImm(-16);                          
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X11)
-            .addReg(AArch64::SP)
-            .addImm(-16);                
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X12)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X13)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X14)
-            .addReg(AArch64::SP)
-            .addImm(-16);                          
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X15)
-            .addReg(AArch64::SP)
-            .addImm(-16);       
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X16)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X17)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X18)
-            .addReg(AArch64::SP)
-            .addImm(-16);                             
+            .addImm(-16);  
+
+        // call verify_pointer()
+        // mov x0, x30
+        // mov x1, sp
+        // bl _ZN7QARMA6414verify_pointerEyyyy
+        // mov x30, x0               
         BuildMI(MBB, MIi, DL, TII->get(AArch64::ADDXri), AArch64::X0)
             .addReg(AArch64::LR)
             .addImm(0)
@@ -297,54 +181,14 @@ void pointerAuthEmuFrameLowering::instrumentEpilogue(const TargetInstrInfo *TII,
             .addImm(0)
             .addImm(0);            
         BuildMI(MBB, MIi, DL, TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6414verify_pointerEyyyy");        
+
+        // save restored register in LR
         BuildMI(MBB, MIi, DL, TII->get(AArch64::ADDXri), AArch64::LR)
             .addReg(AArch64::X0)
             .addImm(0)
-            .addImm(0); 
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X18)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X17)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X16)
-            .addReg(AArch64::SP)
-            .addImm(16);                          
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X15)
-            .addReg(AArch64::SP)
-            .addImm(16);                
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X14)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X13)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X12)
-            .addReg(AArch64::SP)
-            .addImm(16);                          
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X11)
-            .addReg(AArch64::SP)
-            .addImm(16);      
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X10)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X9)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X8)
-            .addReg(AArch64::SP)
-            .addImm(16);                          
+            .addImm(0);          
+
+        // restore general purpose registers (X0-X7)                                         
         BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
             .addReg(AArch64::X7)
             .addReg(AArch64::SP)
@@ -380,28 +224,23 @@ void pointerAuthEmuFrameLowering::instrumentEpilogue(const TargetInstrInfo *TII,
     }
 }
 
-void pointerAuthEmuFrameLowering::instrumentPrologue(const TargetInstrInfo *TII, const TargetRegisterInfo *TRI,
+void pointerAuthEmuFrameLowering::instrumentPrologue(const TargetInstrInfo *TII,
                                             MachineBasicBlock &MBB, MachineBasicBlock::iterator &MBBI,
                                             const DebugLoc &DL) 
 {
 
-    // // mov x0, x30
-    // // mov x1, sp
-    // // bl _ZN7QARMA6412sign_pointerEyy
-    // // mov x30, x0
-    
     MachineFunction *MF = MBB.getParent();
-    if(MF->getName().str() == "main" || MF->getName().str() == "_GLOBAL__sub_I_pa_test.cpp" || MF->getName().str() == "_GLOBAL__sub_I_main.cpp" || MF->getName().str() == "__cxx_global_var_init"){
+    if(MF->getName().str() == "main"|| MF->getName().str() == "_GLOBAL__sub_I_main.cpp" || MF->getName().str() == "__cxx_global_var_init"){
         return;
-    }
-
-    std::cout << "Intrumenting prologue : " << MF->getName().str() << std::endl;
+    }    
 
     // get Machine instruction object
     auto MIi = (MBBI != MBB.end() ? &*MBBI : nullptr);
 
     // insert function call to sign pointer
-    if (MIi == nullptr) {            
+    if (MIi == nullptr) {    
+
+        // save general purpose registers (X0-X7) to the stack         
         BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
             .addReg(AArch64::X0)
             .addReg(AArch64::SP)
@@ -434,50 +273,12 @@ void pointerAuthEmuFrameLowering::instrumentPrologue(const TargetInstrInfo *TII,
             .addReg(AArch64::X7)
             .addReg(AArch64::SP)
             .addImm(-16);      
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X8)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X9)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X10)
-            .addReg(AArch64::SP)
-            .addImm(-16);                          
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X11)
-            .addReg(AArch64::SP)
-            .addImm(-16);                
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X12)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X13)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X14)
-            .addReg(AArch64::SP)
-            .addImm(-16);                          
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X15)
-            .addReg(AArch64::SP)
-            .addImm(-16);       
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X16)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X17)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X18)
-            .addReg(AArch64::SP)
-            .addImm(-16);             ;
+
+        // call sign_pointer()
+        // mov x0, x30
+        // mov x1, sp
+        // bl _ZN7QARMA6412sign_pointerEyyyy
+        // mov x30, x0   
         BuildMI(&MBB, DL, TII->get(AArch64::ADDXri), AArch64::X0)
             .addReg(AArch64::LR)
             .addImm(0)
@@ -495,53 +296,13 @@ void pointerAuthEmuFrameLowering::instrumentPrologue(const TargetInstrInfo *TII,
             .addImm(0)
             .addImm(0);                  
         BuildMI(&MBB, DL, TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6412sign_pointerEyyyy");        
+
+        // save signed pointer in LR
         BuildMI(&MBB, DL, TII->get(AArch64::ADDXri), AArch64::LR)
             .addReg(AArch64::X0)
-            .addImm(0);     
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X18)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X17)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X16)
-            .addReg(AArch64::SP)
-            .addImm(16);                          
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X15)
-            .addReg(AArch64::SP)
-            .addImm(16);                
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X14)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X13)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X12)
-            .addReg(AArch64::SP)
-            .addImm(16);                          
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X11)
-            .addReg(AArch64::SP)
-            .addImm(16);      
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X10)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X9)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X8)
-            .addReg(AArch64::SP)
-            .addImm(16);                          
+            .addImm(0);        
+
+        // restore general purpose registers (X0-X7)                                  
         BuildMI(&MBB, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
             .addReg(AArch64::X7)
             .addReg(AArch64::SP)
@@ -575,7 +336,9 @@ void pointerAuthEmuFrameLowering::instrumentPrologue(const TargetInstrInfo *TII,
             .addReg(AArch64::SP)
             .addImm(16);             
     } else {      
-                BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
+
+        // save general purpose registers (X0-X7) to the stack 
+        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
             .addReg(AArch64::X0)
             .addReg(AArch64::SP)
             .addImm(-16);            
@@ -606,51 +369,13 @@ void pointerAuthEmuFrameLowering::instrumentPrologue(const TargetInstrInfo *TII,
         BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
             .addReg(AArch64::X7)
             .addReg(AArch64::SP)
-            .addImm(-16);      
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X8)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X9)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X10)
-            .addReg(AArch64::SP)
-            .addImm(-16);                          
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X11)
-            .addReg(AArch64::SP)
-            .addImm(-16);                
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X12)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X13)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X14)
-            .addReg(AArch64::SP)
-            .addImm(-16);                          
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X15)
-            .addReg(AArch64::SP)
-            .addImm(-16);       
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X16)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X17)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::STRXpre), AArch64::SP)
-            .addReg(AArch64::X18)
-            .addReg(AArch64::SP)
-            .addImm(-16);            
+            .addImm(-16);  
+
+        // call sign_pointer()
+        // mov x0, x30
+        // mov x1, sp
+        // bl _ZN7QARMA6412sign_pointerEyyyy
+        // mov x30, x0            
         BuildMI(MBB, MIi, DL, TII->get(AArch64::ADDXri), AArch64::X0)
             .addReg(AArch64::LR)
             .addImm(0)
@@ -668,54 +393,14 @@ void pointerAuthEmuFrameLowering::instrumentPrologue(const TargetInstrInfo *TII,
             .addImm(0)
             .addImm(0);      
         BuildMI(MBB, MIi, DL, TII->get(AArch64::BL)).addExternalSymbol("_ZN7QARMA6412sign_pointerEyyyy");        
+
+        // save signed pointer in LR
         BuildMI(MBB, MIi, DL, TII->get(AArch64::ADDXri), AArch64::LR)
             .addReg(AArch64::X0)
             .addImm(0)
-            .addImm(0); 
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X18)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X17)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X16)
-            .addReg(AArch64::SP)
-            .addImm(16);                          
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X15)
-            .addReg(AArch64::SP)
-            .addImm(16);                
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X14)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X13)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X12)
-            .addReg(AArch64::SP)
-            .addImm(16);                          
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X11)
-            .addReg(AArch64::SP)
-            .addImm(16);      
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X10)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X9)
-            .addReg(AArch64::SP)
-            .addImm(16);            
-        BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
-            .addReg(AArch64::X8)
-            .addReg(AArch64::SP)
-            .addImm(16);                          
+            .addImm(0);      
+
+        // restore general purpose registers (X0-X7)                 
         BuildMI(MBB, MIi, DL, TII->get(AArch64::LDRXpost), AArch64::SP)
             .addReg(AArch64::X7)
             .addReg(AArch64::SP)

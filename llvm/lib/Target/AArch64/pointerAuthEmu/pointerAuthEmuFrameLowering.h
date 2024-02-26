@@ -8,20 +8,14 @@
 namespace llvm {
 
     namespace pointerAuthEmuFrameLowering {
-
-    const StringRef signAddressFuncName = StringRef("_Z4signv");
-    const StringRef verifyAddressFuncName = StringRef("_Z6verifyv");
-
-    void instrumentEpilogue(const TargetInstrInfo *TII, const TargetRegisterInfo *TRI,
+        
+    void instrumentEpilogue(const TargetInstrInfo *TII, 
                         MachineBasicBlock &MBB, MachineBasicBlock::iterator &MBBI,
                         const DebugLoc &DL);
 
-    void instrumentPrologue(const TargetInstrInfo *TII, const TargetRegisterInfo *TRI,
+    void instrumentPrologue(const TargetInstrInfo *TII, 
                             MachineBasicBlock &MBB, MachineBasicBlock::iterator &MBBI,
-                            const DebugLoc &DL);
-    
-    void addFunctionCall(const TargetInstrInfo *TII, MachineBasicBlock &MBB, MachineInstr &MI,
-                                    const DebugLoc &DL, Function *func);
+                            const DebugLoc &DL);    
     
     }
 }
